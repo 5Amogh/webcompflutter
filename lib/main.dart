@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 void main() {
   runApp(MyApp());
@@ -20,19 +20,7 @@ class MyWebView extends StatefulWidget {
 }
 
 class _MyWebViewState extends State<MyWebView> {
-  late WebViewController _controller;
-  WebViewCookie bearerCookie = const WebViewCookie(
-    name: 'bearer',
-    value:
-    '<bearer toke>',
-    domain: 'http://192.168.0.108:4200',
-  );
-  WebViewCookie userCookie = const WebViewCookie(
-    name: 'user',
-    value:
-    '<X-Authenticated-user-token',
-    domain: 'http://192.168.0.108:4200',
-  );
+  late InAppWebViewController _controller;
 
   @override
   Widget build(BuildContext context) {
@@ -41,22 +29,26 @@ class _MyWebViewState extends State<MyWebView> {
         title: Text('Karmayogi Survey'),
         backgroundColor: Colors.indigo,
       ),
-      body: WebView(
-        initialUrl: 'http://192.168.0.108:4200/mligot/mlsurvey/65f18fdad2bc56000784a3b8',
-        javascriptMode: JavascriptMode.unrestricted,
-        onWebViewCreated: (WebViewController webViewController) {
+      body: InAppWebView(
+        initialUrlRequest: URLRequest(
+          url: Uri.parse(
+              'http://192.168.0.108:4200/mligot/mlsurvey/65eeb928fa030d0007864e96'),
+          headers: {
+            'Cookie': 'bearer=<auth>; user=<user_token>',
+          },
+        ),
+        onWebViewCreated: (InAppWebViewController webViewController) {
           _controller = webViewController;
         },
-        initialCookies: [bearerCookie, userCookie],
-        onPageFinished: (String url) {
-          _controller.runJavascript('''
-           window.addEventListener('message', handleMessage);
-          
-           function handleMessage(res) {
-             let responseData = JSON.parse(res.data);
-             console.log('We got the response from the browser', JSON.stringify(responseData));
-           }
-         ''');
+        onLoadStop: (InAppWebViewController controller, Uri? url) {
+          controller.evaluateJavascript(source: '''
+            window.addEventListener('message', handleMessage);
+
+            function handleMessage(res) {
+              let responseData = JSON.parse(res.data);
+              console.log('We got the response from the browser', JSON.stringify(responseData));
+            }
+          ''');
         },
       ),
     );
